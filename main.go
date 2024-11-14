@@ -24,10 +24,14 @@ type ToDo struct {
 var items = []ToDo{}
 
 func GetItems(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{
-		"message": "All items are retrieved",
-		"items":   items,
-	})
+	if len(items) == 0 {
+		c.JSON(http.StatusOK, gin.H{"message": "Hi! Welcome to the To-Do-App! Post your first item to get started."})
+	} else {
+		c.JSON(http.StatusOK, gin.H{
+			"message": "All items are retrieved",
+			"items":   items,
+		})
+	}
 }
 
 func GetItembyID(c *gin.Context) {
@@ -130,15 +134,24 @@ func main() {
 	logger.Initialize() // Initialize the logger settings
 
 	router := gin.Default()
-	items := router.Group("/items")
-	items.Use(LogUserInteractions())
+	itemsGroup := router.Group("/items")
+	itemsGroup.Use(LogUserInteractions())
 	{
-		items.GET("", GetItems)
-		items.GET("/:id", GetItembyID)
-		items.POST("", CreateItem)
-		items.PUT("/:id", UpdateItembyID)
-		items.DELETE("/:id", DeleteItem)
+		itemsGroup.GET("", GetItems)
+		itemsGroup.GET("/:id", GetItembyID)
+		itemsGroup.POST("", CreateItem)
+		itemsGroup.PUT("/:id", UpdateItembyID)
+		itemsGroup.DELETE("/:id", DeleteItem)
 	}
+
+	// Root route, shows the welcome message if there are no items in the list
+	router.GET("/", func(c *gin.Context) {
+		if len(items) == 0 {
+			c.JSON(http.StatusOK, gin.H{"message": "Welcome to the To-Do App! Post your first item to get started."})
+		} else {
+			c.Redirect(http.StatusMovedPermanently, "/items")
+		}
+	})
 
 	router.Run(":8080")
 }
